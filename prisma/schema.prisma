@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite has no native enum type in Prisma; these are plain strings.
+// Valid Role values: ADMIN | OFFICER | APPROVER | EXECUTIVE
+// Valid ApplicantCategory values: GENERAL | SC_ST | WOMEN | FPO | DIFFICULT_AREA
+// Valid ApplicationStatus values: DRAFT | SUBMITTED | UNDER_SCRUTINY | INELIGIBLE |
+//   ELIGIBLE_PENDING_SCORE | SCORED | SHORTLISTED_FOR_PRESENTATION | PRESENTED | APPROVED | REJECTED | WITHDRAWN
+// Valid RecommendationVerdict values: RECOMMENDED | NOT_RECOMMENDED | NEEDS_REVIEW
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("OFFICER")
+  createdAt    DateTime @default(now())
+
+  applicationsAssigned Application[]  @relation("AssignedOfficer")
+  scores               ApplicationScore[]
+  auditLogs            AuditLog[]
+}
+
+model Scheme {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  shortName   String
+  description String
+  guidelineDate String?
+  sourceDocUrl  String?
+  isActive    Boolean @default(true)
+
+  // Pattern of assistance
+  subsidyGeneralPct    Float
+  subsidyDifficultPct  Float
+  subsidyCapAmount     Float   // in INR
+  subsidyCapLabel      String?
+
+  // Eligibility gate parameters
+  minEquityGeneralPct     Float @default(20)
+  minEquityDifficultPct   Float @default(10)
+  minTermLoanGeneralPct   Float @default(20)
+  minTermLoanDifficultPct Float @default(10)
+  netWorthMultiplierGeneral   Float @default(1.0)
+  netWorthMultiplierDifficult Float @default(1.0)
+
+  // Fees & security
+  processingFeeGeneral    Float @default(20000)
+  processingFeeScSt       Float @default(15000)
+  performanceSecurityPct  Float @default(5)
+
+  // Scoring thresholds
+  passThresholdGeneralPct Float @default(60)
+  passThresholdScStPct    Float @default(45)
+  maxScore                Float @default(100)
+
+  // Cool-off / repeat assistance rule (years)
+  coolOffYears         Int @default(2)
+  maxProjectsPerDecade Int @default(2)
+
+  // Ministry-facing grant monitoring parameters
+  budgetAllocationAmount Float     @default(0) // total budget allocated to this scheme (INR), current FY
+  eoiReleaseDate         DateTime?
+  eoiClosingDate         DateTime?
+  outerSubmissionDays    Int       @default(60) // days allowed to submit acceptance docs after approval letter
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  criteria     ScoringCriterion[]
+  applications Application[]
+}
+
+model ScoringCriterion {
+  id         String  @id @default(cuid())
+  schemeId   String
+  scheme     Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  code       String  // e.g. "1", "1.1", "2.1"
+  parentCode String? // e.g. "1" for "1.1"
+  category   String  // grouping label e.g. "Possession of Appropriate Land or Building"
+  label      String  // full criterion text
+  maxMarks   Float
+  sortOrder  Int     @default(0)
+  stage      String  @default("DOCUMENT") // DOCUMENT | PRESENTATION
+  inputType  String  @default("MANUAL")   // MANUAL | BAND | BOOLEAN
+  bandConfig String? // JSON string describing band thresholds for BAND type
+  isActive   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scores ApplicationScore[]
+
+  @@index([schemeId])
+}
+
+model Application {
+  id            String @id @default(cuid())
+  applicationNo String @unique
+
+  schemeId String
+  scheme   Scheme @relation(fields: [schemeId], references: [id])
+
+  applicantName   String
+  entityType      String // Company / Society / Partnership / Proprietorship / FPO / SHG etc.
+  category        String @default("GENERAL")
+  isDifficultArea Boolean @default(false)
+  state           String
+  district        String
+
+  totalProjectCost    Float?
+  eligibleProjectCost Float?
+  subsidySought       Float?
+
+  status String @default("DRAFT")
+
+  // Ministry-facing grant monitoring fields (populated once approved)
+  approvalLetterDate  DateTime?
+  approvedGrantAmount Float?
+
+  assignedOfficerId String?
+  assignedOfficer   User? @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  dataValues        ApplicationDataValue[]
+  documents         ApplicationDocument[]
+  eligibilityChecks EligibilityCheck[]
+  scores            ApplicationScore[]
+  recommendation    Recommendation?
+  disbursements     Disbursement[]
+  auditLogs         AuditLog[]
+
+  @@index([schemeId])
+  @@index([status])
+}
+
+model Disbursement {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  installment String // FIRST | SECOND | FINAL
+  plannedDate DateTime
+  actualDate  DateTime?
+  amount      Float
+
+  status              String    @default("PLANNED") // PLANNED | RELEASED | DELAYED
+  delayReason         String?
+  revisedExpectedDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+}
+
+model ApplicationDataValue {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fieldKey      String
+  fieldValue    String
+
+  @@unique([applicationId, fieldKey])
+}
+
+model ApplicationDocument {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  docType       String
+  fileName      String
+  filePath      String?
+  verified      Boolean     @default(false)
+  uploadedAt    DateTime    @default(now())
+}
+
+model EligibilityCheck {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  checkKey      String
+  label         String
+  passed        Boolean
+  remarks       String?
+  checkedAt     DateTime    @default(now())
+}
+
+model ApplicationScore {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  criterionId   String
+  criterion     ScoringCriterion @relation(fields: [criterionId], references: [id])
+  marksAwarded  Float
+  remarks       String?
+  scoredById    String?
+  scoredBy      User? @relation(fields: [scoredById], references: [id])
+  scoredAt      DateTime @default(now())
+
+  @@unique([applicationId, criterionId])
+}
+
+model Recommendation {
+  id                String   @id @default(cuid())
+  applicationId     String   @unique
+  application       Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  totalScore        Float
+  maxScore          Float
+  percentageScore   Float
+  eligibilityPassed Boolean
+  verdict           String
+  notes             String?
+  generatedAt       DateTime @default(now())
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  entityType    String
+  entityId      String
+  action        String
+  detail        String?
+  actorId       String?
+  actor         User?    @relation(fields: [actorId], references: [id])
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id])
+  createdAt     DateTime @default(now())
+}

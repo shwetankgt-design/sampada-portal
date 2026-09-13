@@ -1,8 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f2f7;
+  --foreground: #211a29;
+
+  /* Grant Thornton inspired palette: deep violet + vivid orange accent */
+  --gt-purple-950: #1f0f2e;
+  --gt-purple-900: #2c1544;
+  --gt-purple-800: #3a1c5c;
+  --gt-purple-700: #4a2373;
+  --gt-purple-600: #5c2c8f;
+  --gt-purple-500: #7133ab;
+  --gt-purple-100: #ece3f7;
+  --gt-purple-50: #f6f2fb;
+
+  --gt-orange-600: #e05a00;
+  --gt-orange-500: #f2760a;
+  --gt-orange-400: #ff9433;
+  --gt-orange-100: #ffe7d1;
+
+  --gt-ink: #211a29;
+  --gt-muted: #6b6478;
+  --gt-border: #e3ddec;
+  --gt-surface: #ffffff;
+
+  --gt-success: #1a8f5e;
+  --gt-success-bg: #e5f7ee;
+  --gt-warning: #b3760a;
+  --gt-warning-bg: #fff2df;
+  --gt-danger: #c0293a;
+  --gt-danger-bg: #fbe7e9;
 }
 
 @theme inline {
@@ -12,15 +39,290 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Inter, Arial, Helvetica, sans-serif;
+}
+
+/* ---------- Shared component classes ---------- */
+
+.gt-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.gt-sidebar {
+  background: linear-gradient(180deg, var(--gt-purple-950), var(--gt-purple-800));
+  color: #fff;
+  padding: 1.5rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  align-self: start;
+}
+
+.gt-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.gt-brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--gt-orange-500), var(--gt-orange-400));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #2c1544;
+  flex-shrink: 0;
+}
+
+.gt-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.gt-nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.gt-nav-link.active {
+  background: var(--gt-orange-500);
+  color: #fff;
+}
+
+.gt-nav-section {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0.4rem 0.75rem 0.2rem;
+}
+
+.gt-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gt-topbar {
+  height: 64px;
+  border-bottom: 1px solid var(--gt-border);
+  background: var(--gt-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  flex-shrink: 0;
+}
+
+.gt-content {
+  padding: 1.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.gt-card {
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(31, 15, 46, 0.04);
+}
+
+.gt-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gt-ink);
+  margin-bottom: 0.15rem;
+}
+
+.gt-kpi-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--gt-purple-800);
+  line-height: 1.1;
+}
+
+.gt-kpi-label {
+  font-size: 0.78rem;
+  color: var(--gt-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: filter 0.15s ease, transform 0.05s ease;
+  cursor: pointer;
+}
+
+.gt-btn:active {
+  transform: translateY(1px);
+}
+
+.gt-btn-primary {
+  background: var(--gt-orange-500);
+  color: #fff;
+}
+.gt-btn-primary:hover {
+  filter: brightness(1.06);
+}
+
+.gt-btn-secondary {
+  background: var(--gt-purple-100);
+  color: var(--gt-purple-800);
+}
+.gt-btn-secondary:hover {
+  filter: brightness(0.97);
+}
+
+.gt-btn-ghost {
+  background: transparent;
+  color: var(--gt-purple-700);
+  border: 1px solid var(--gt-border);
+}
+.gt-btn-ghost:hover {
+  background: var(--gt-purple-50);
+}
+
+.gt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.gt-badge-success {
+  background: var(--gt-success-bg);
+  color: var(--gt-success);
+}
+.gt-badge-warning {
+  background: var(--gt-warning-bg);
+  color: var(--gt-warning);
+}
+.gt-badge-danger {
+  background: var(--gt-danger-bg);
+  color: var(--gt-danger);
+}
+.gt-badge-neutral {
+  background: var(--gt-purple-100);
+  color: var(--gt-purple-700);
+}
+
+.gt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.gt-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gt-muted);
+  font-weight: 700;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--gt-border);
+  background: var(--gt-purple-50);
+}
+
+.gt-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--gt-border);
+  color: var(--gt-ink);
+}
+
+.gt-table tbody tr:hover {
+  background: var(--gt-purple-50);
+}
+
+.gt-input,
+.gt-select,
+.gt-textarea {
+  width: 100%;
+  border: 1px solid var(--gt-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  background: #fff;
+  color: var(--gt-ink);
+}
+
+.gt-input:focus,
+.gt-select:focus,
+.gt-textarea:focus {
+  outline: 2px solid var(--gt-purple-500);
+  outline-offset: 1px;
+}
+
+.gt-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gt-muted);
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.gt-page-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--gt-purple-900);
+}
+
+.gt-page-subtitle {
+  font-size: 0.85rem;
+  color: var(--gt-muted);
+  margin-top: 0.15rem;
+}
+
+.gt-divider {
+  height: 1px;
+  background: var(--gt-border);
+  margin: 1.25rem 0;
+}
+
+.gt-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--gt-purple-100);
+  overflow: hidden;
+}
+
+.gt-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gt-orange-500), var(--gt-orange-400));
 }
